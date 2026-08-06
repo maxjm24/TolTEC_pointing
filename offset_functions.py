@@ -78,7 +78,7 @@ def relative_pointing_offsets(ref_obs, ref_center, align_obsvs, align_centers, w
 
 
 # Finds the offset between the image's current sky position and its actual sky position via iterative centroiding
-def absolute_pointing_offset(img, img_center, img_dec, img_ra, source_center_guess, source_dec, source_ra, img_width, fov, wav, crop, num_iter, x_push, y_push):
+def absolute_pointing_offset(img, img_center, img_dec, img_ra, source_center_guess, source_dec, source_ra, img_width, ang_res, wav, crop, num_iter, x_push, y_push):
     
     # Transfers the above guess into the full uncropped image
     source_center_guess = (source_center_guess[0] + crop+1-y_push, source_center_guess[1] + crop+1-x_push)
@@ -90,7 +90,7 @@ def absolute_pointing_offset(img, img_center, img_dec, img_ra, source_center_gue
     yi, xi = np.indices(source_img.shape) # Lists of all y/x indices
     y0, x0 = img_width//2, img_width//2 # Initial centroid of source_img
     
-    fwhm_val = fov*2 # Guesses the FWHM of a large point source as twice the FOV
+    fwhm_val = ang_res*2 # Guesses the FWHM of a large point source as twice the angular resolution
     centroid_list = [] # List of attempted centroids
     for i in range(num_iter): # Loops for the specified number of iterations
         dist = np.sqrt((yi - y0)**2 + (xi - x0)**2) # Caluclates distance between each pixel and the centroid
