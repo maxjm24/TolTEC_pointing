@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from astropy.io import fits
 import cv2
 from photutils.centroids import centroid_com
+from astropy.wcs import WCS
 
 # Finds the offsets between ref_obs and each image in align_obsvs that maximize the cross-correlation between them
 def relative_pointing_offsets(ref_obs, ref_center, align_obsvs, align_centers, wav, redu_num, crop, num_iter, min_increment, x_push, y_push):
@@ -77,16 +78,16 @@ def relative_pointing_offsets(ref_obs, ref_center, align_obsvs, align_centers, w
 
 
 
-# Finds the offset between the image's current sky position and its actual sky position via iterative centroiding
-def absolute_pointing_offset(img, img_center, img_dec, img_ra, source_center_guess, source_dec, source_ra, img_width, ang_res, wav, crop, num_iter, x_push, y_push):
+# Finds the offset between a cropped square image's current sky position and its actual sky position via iterative centroiding
+def absolute_pointing_offset(img, img_center, wcs, source_center_guess, source_dec, source_ra, img_width, ang_res, wav, num_iter):
     
     # Transfers the above guess into the full uncropped image
-    source_center_guess = (source_center_guess[0] + crop+1-y_push, source_center_guess[1] + crop+1-x_push)
+    source_center_guess = (source_center_guess[0] + img_center[0] - img.shape[0]//2, source_center_guess[1] + img_center[1] - img.shape[1]//2)
     print(f'Guessed Point Source Center (Pixels): {source_center_guess}')
     
     # Creates a square image centered on the source with a specified width
-    source_img = img[source_center_guess[0] - crop-1+y_push - img_width//2:source_center_guess[0] - crop+y_push + img_width//2, 
-                     source_center_guess[1] - crop-1+x_push - img_width//2:source_center_guess[1] - crop+x_push + img_width//2]
+    source_img = img[source_center_guess[0]-img_center[0]+img.shape[0]//2 - img_width//2:source_center_guess[0]-img_center[0]+img.shape[0]//2 + img_width//2, 
+                     source_center_guess[1]-img_center[1]+img.shape[1]//2 - img_width//2:source_center_guess[1]-img_center[1]+img.shape[1]//2 + img_width//2]
     yi, xi = np.indices(source_img.shape) # Lists of all y/x indices
     y0, x0 = img_width//2, img_width//2 # Initial centroid of source_img
     
@@ -103,26 +104,22 @@ def absolute_pointing_offset(img, img_center, img_dec, img_ra, source_center_gue
     # The final pixel centroid is transfered into the full uncropped image
     better_source_center = (centroid_list[-1][0] + source_center_guess[0] - img_width//2, centroid_list[-1][1] + source_center_guess[1] - img_width//2)
     print(f'Final Itervative Point Source Centroid (Pixels): {better_source_center}')
+
+    # Transforms the centroid from pixels to WCS coordinates, getting the image's guessed position of the source
+    ra_pos, dec_pos, _, _ = wcs.wcs_pix2world(better_source_center[1], better_source_center[0], 1.0, 1.0, 1)
+    source_pos_guess = (float(dec_pos), float(ra_pos))
+    print(f'Guessed Location of Chosen Source (Dec, RA) (Degrees): {(source_pos_guess[0], source_pos_guess[1])}')
     
-    # The relative position of the centroid with respect to the image's center pixel is found
-    source_rel_pos = (better_source_center[0] - img_center[0], better_source_center[1] - img_center[1])
-    print(f'Position Relative to Center Pixel (Pixels): {source_rel_pos}')
-    
-    # The RA/DEC WCS location of the centroid is found by adding the centroid's relative position to the center pixel's location
-    source_pos_guess = (img_dec + source_rel_pos[0], img_ra + source_rel_pos[1])
-    print(f'Guessed Location of Chosen Source (Dec, RA) (Degrees): {(source_pos_guess[0]/3600, source_pos_guess[1]/3600)}')
-    
-    source_pos = (source_dec*3600, source_ra*3600)
     # The WCS coordinate offset of the image is the difference between the actual position of the source and the image's position of the source
-    absolute_offset = np.array([source_pos[1] - source_pos_guess[1], source_pos[0] - source_pos_guess[0]])
-    print(f'Absolute Offset (Dec, RA) (Arcseconds): {(float(absolute_offset[1]), float(absolute_offset[0]))}')
+    absolute_offset = np.array([source_ra - source_pos_guess[1], source_dec - source_pos_guess[0]])
+    print(f'Absolute Offset (Dec, RA) (Degrees): {(float(absolute_offset[1]), float(absolute_offset[0]))}')
 
     # Plots source_img along with the attempted centroids
     centroid_list = np.array(centroid_list)
     fig, ax = plt.subplots(1, 1)
     fig.set_figheight(5)
     fig.set_figwidth(5)
-    ax.scatter(centroid_list.T[1], centroid_list.T[0], c='r', marker='*')
+    ax.scatter(centroid_list[-1][1], centroid_list[-1][0], c='r', marker='*')
     im = ax.imshow(source_img, cmap='bone', origin='lower')
     ax.set_title(f'Image of Point Source ({wav} micron)')
     fig.colorbar(im, ax=ax, cax=fig.add_axes([0.95, 0.3, 0.03, 0.4]));
