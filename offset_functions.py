@@ -71,7 +71,8 @@ def relative_pointing_offsets(ref_obs, ref_center, align_obsvs, align_centers, w
     im = ax[1].imshow(aligned_comp_img, cmap='bone', origin='lower')
     ax[1].set_title(f'Aligned Composite Image ({wav} micron)')
     plt.subplots_adjust(wspace = 0.3)
-    fig.colorbar(im, ax=ax, cax=fig.add_axes([0.95, 0.3, 0.03, 0.4]));
+    cbar = fig.colorbar(im, ax=ax, cax=fig.add_axes([0.95, 0.3, 0.03, 0.4]));
+    cbar.ax.set_title('mJy/beam', pad=10);
 
     # returns the x/y pixel shifts necessary to align each image to ref_img, along with the aligned composite image
     return x_shifts, y_shifts, aligned_comp_img
@@ -118,13 +119,14 @@ def absolute_pointing_offset(img, img_center, wcs, source_center_guess, source_d
     centroid_list = np.array(centroid_list)
     fig, ax = plt.subplots(1, 1)
     fig.set_figheight(5)
-    fig.set_figwidth(5)
+    fig.set_figwidth(6)
     ax.scatter(centroid_list[0][1], centroid_list[0][0], c='r', marker='*', label='Initial Centroid')
     ax.scatter(centroid_list[-1][1], centroid_list[-1][0], c='g', marker='*', label='Final Centroid')
     im = ax.imshow(source_img, cmap='bone', origin='lower')
     ax.set_title(f'Image of Point Source ({wav} micron)')
     ax.legend()
-    fig.colorbar(im, ax=ax, cax=fig.add_axes([0.95, 0.3, 0.03, 0.4]));
+    cbar = fig.colorbar(im, ax=ax, cax=fig.add_axes([0.95, 0.3, 0.03, 0.4]));
+    cbar.ax.set_title('mJy/beam', pad=10);
 
     # Returns the (y, x) WCS offset in arcseconds
     return absolute_offset
