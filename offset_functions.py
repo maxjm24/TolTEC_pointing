@@ -119,9 +119,11 @@ def absolute_pointing_offset(img, img_center, wcs, source_center_guess, source_d
     fig, ax = plt.subplots(1, 1)
     fig.set_figheight(5)
     fig.set_figwidth(5)
-    ax.scatter(centroid_list[-1][1], centroid_list[-1][0], c='r', marker='*')
+    ax.scatter(centroid_list[0][1], centroid_list[0][0], c='r', marker='*', label='Initial Centroid')
+    ax.scatter(centroid_list[-1][1], centroid_list[-1][0], c='g', marker='*', label='Final Centroid')
     im = ax.imshow(source_img, cmap='bone', origin='lower')
     ax.set_title(f'Image of Point Source ({wav} micron)')
+    ax.legend()
     fig.colorbar(im, ax=ax, cax=fig.add_axes([0.95, 0.3, 0.03, 0.4]));
 
     # Returns the (y, x) WCS offset in arcseconds
