@@ -92,10 +92,10 @@ def absolute_pointing_offset(img, img_center, wcs, source_center_guess, source_d
     yi, xi = np.indices(source_img.shape) # Lists of all y/x indices
     y0, x0 = img_width//2, img_width//2 # Initial centroid of source_img
     
-    centroid_list = [] # List of attempted centroids
+    centroid_list = [[float(y0), float(x0)]] # List of attempted centroids
     for i in range(num_iter): # Loops for the specified number of iterations
         dist = np.sqrt((yi - y0)**2 + (xi - x0)**2) # Caluclates distance between each pixel and the centroid
-        circle_boundary = np.where(dist <= fwhm_val) # Determines which pixels fall within a circle of FWHM diameter centered on the centroid
+        circle_boundary = np.where(dist <= ang_res) # Determines which pixels fall within a circle of FWHM diameter centered on the centroid
         circle = np.zeros(source_img.shape) # Initializes array of 0s
         circle[circle_boundary] = source_img[circle_boundary] # Adds only the pixel values within circle_boundary to the circle array
         x0, y0 = centroid_com(circle) # Finds flux-weighted center-of-mass of the circle array (it is necessary to subtract the background to run this)
